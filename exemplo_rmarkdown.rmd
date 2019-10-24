@@ -1,0 +1,396 @@
+---
+title: "Exercícios de bioestatística: 2° semestre - 2019"
+author: "Natielle Gonçalves de Sá"
+output:
+  pdf_document: default
+  html_document: default
+---
+# ASSUNTO: Testes de hipóteses de uma média populacional.
+### 1. Durante os últimos setenta anos, os arqueólogos de certo país tentam classificar os crânios encontrados em escavações em um de dois grupos raciais. 
+
+  Para a raça A supõem que o comprimento do crânio tem distribuição normal com média 192 mm e variância 64 mm2.
+  Para a raça B, média de 198 mm e variância de 75 mm2 . 
+  
+### Uma nova escavação forneceu 25 crânios, cuja média foi de 195,5 mm. Há fortes indícios, pelos utensílios encontrados com a ossada, de que os crânios pertencem a raça A. Pede-se:
+
+- a) Definir as hipóteses estatísticas;
+*Resposta:*
+  n: 25
+  media: 195.5
+  
+  _Hipótese nula:_ Crânios são da raça B. 
+  _Hipótese alternativa:_ Crânios não são da raça B.
+  
+  Em outras palavras, 
+  _Hipótese nula:_ media_B = media 
+  _Hipótese alternativa:_ media_B != media (teste bilateral)
+
+- b) Estabelecer a regra de decisão considerando-se alfa = 0,05;
+  
+  *Calculando o teste:* 
+```{r}
+xbarra = 195.5 # media da amostra
+mediaNula = 198.0 # media da hipotese nula
+# desvio padrao da raca A, pois acha que pertence a raca A
+sigma = sqrt(64)   
+n = 25 # tamanho total da amostra
+z = (xbarra-mediaNula)/(sigma/sqrt(n)) 
+z # resultado do teste para uma media pop.
+```
+
+  *Identificando a região crítica:*
+```{r}
+alfa = 0.05 
+z.half.alfa = qnorm(1.0-alfa/2.0) # pois é bilateral
+regiao_critica = c(-z.half.alfa, z.half.alfa); regiao_critica
+
+# Plotando a distribuicao normal com seus pontos da regiao critica
+x = rnorm(1000)
+y = dnorm(x, mean = 0, sd = 1)
+
+# Encontrando os pontos da distribuicao normal que esta na regiao critica
+dentro_regiao_critica = ifelse(x < regiao_critica[1], x,
+                                ifelse(x > regiao_critica[2], x, 6))
+
+# Plotando o grafico com sua regiao critica
+plot(x, y, # plota o grafico de uma distribuicao normal
+     type = "p", # grafico de pontos
+     pch=19, # tipo do ponto preenchido
+     col = "black")
+points(dentro_regiao_critica, y,
+       col="red")
+abline(v=regiao_critica, col="red") # pontos da regiao critica
+
+
+```  
+
+- c) Em que raça você classificará os crânios?
+
+```{r}
+
+# Plotando o grafico com sua regiao critica E COM SEU VALOR DE Z ENCONTRADO
+plot(x, y, # plota o grafico de uma distribuicao normal
+     type = "p", # grafico de pontos
+     pch=19, # tipo do ponto preenchido
+     col = "black")
+points(dentro_regiao_critica, y,
+       col="red")
+abline(v=regiao_critica, col="red") # pontos da regiao critica
+points(x = z, y = 0,
+       col="green",
+       pch=19 # tipo do ponto preenchido
+       )
+
+# z está fora da região crítica
+if (z > regiao_critica[1] && z < regiao_critica[2]){
+  print("Fora da região crítica. Nao rejeita H0.")
+} else
+  print("Na região crítica. Rejeita H0.")
+```
+  
+  *Resposta:* Na raça B, pois não rejeitamos a hipótese nula.
+  Como não rejeitamos H0, há evidências estatísticas que os crânios pertençam a raca B.
+  
+- d) Calcule beta = Pr (erro do tipo II).
+```{r}
+# beta = prob(não rejeitar H0 | H0 é falsa)
+# beta = prob(-1.96 < z < 1.96 | mediaNula = 198)
+
+# Encontrando quanto 1.96 (normalizada) vale em uma distribuicao com media 198 e sd de sqrt(75/25)
+valor.p = 198 + (1.96*(sqrt(75/25)))
+valor.n = 198 - (1.96*(sqrt(75/25)))
+IC = c(valor.n, valor.p); IC
+
+# Outra meio de chegar no mesmo resultado usando funcao
+valor.p2 = qnorm(pnorm(1.96), 198, sqrt(75/25))
+valor.n2 = qnorm(pnorm(-1.96), 198, sqrt(75/25))
+IC2 = c(valor.n2, valor.p2); IC2
+
+# Ou seja,
+# beta = prob(194.6052 < xbarra < 201.3948 | mediaNula = 198)
+# beta = prob(z > -1.96) + prob(z < 1.96)
+
+vc1 = (IC[1] - 192)/sqrt(75/25); vc1 # valor critico normalizado
+vc2 = (IC[2] - 192)/sqrt(75/25); vc2 # valor critico normalizado
+
+beta = pnorm(vc2) - pnorm(vc1); beta
+
+```
+
+### 2. Uma companhia de cigarros anuncia que o índice médio de nicotina dos cigarros que fabrica apresenta-se abaixo de 25,5 mg por cigarro. Um laboratório realiza 10 análises desse índice, obtendo:28, 27, 24, 21, 25, 26, 22,23,24,e 27. Sabe-se que o índice de nicotina se distribui normalmente, com variância igual a 4,84 mg2 . Pode-se aceitar, ao nível de 10% , a afirmação do fabricante?
+- Afirmacao (H0):
+  H0: med.nicotina <= 25.5
+  HA: med.nicotina > 25.5
+
+- Amostra:
+  n = 10
+  amostra = 28, 27, 24, 21, 25, 26, 22,23,24,e 27
+  var = 4.84
+  alfa = 0.1 ou 10%
+
+```{r}
+n = 10
+alfa = 0.1
+sigma = sqrt(4.84)
+media.pop = 25.5
+dados = as.data.frame(c(28, 27, 24, 21, 25, 26, 22, 23, 24, 27))
+media.amostral = apply(dados, MARGIN = 2, FUN = mean); media.amostral
+```
+
+Normalizando a variavel e encontrando a região crítica:
+```{r}
+# Normalizando a variavel
+z = (media.amostral-media.pop)/(sigma/sqrt(n)); z
+
+# Encontrando a região crítica
+  # Nao divide por 2 porque nao é bilateral
+  # Nao faz 1-alfa porque vai do inf até 0.1 da distribuicao
+  z.alfa = qnorm(alfa); z.alfa 
+  pnorm(z.alfa) # Mostra o valor do alfa
+  regiao_critica = c(z.alfa); regiao_critica
+
+```
+
+Plotando as regioes criticas:
+
+```{r}
+# -----------------------------------------------------------------
+# Plotando a distribuicao normal com seus pontos da regiao critica
+# -----------------------------------------------------------------
+x = rnorm(1000)
+y = dnorm(x, mean = 0, sd = 1)
+
+# Encontrando os pontos da distribuicao normal que esta na regiao critica
+dentro_regiao_critica = ifelse(x < regiao_critica[1], x, 6)
+
+# Plotando o grafico com sua regiao critica
+plot(x, y, # plota o grafico de uma distribuicao normal
+     type = "p", # grafico de pontos
+     pch=19, # tipo do ponto preenchido
+     col = "black")
+points(dentro_regiao_critica, y, # pontos da regiao critica
+       col="red")
+abline(v=regiao_critica, col="red") # valores criticos da regiao critica
+points(x = z, y = 0, # z normalizada
+       col="green",
+       pch=19 # tipo do ponto preenchido
+       )
+
+# z está fora da região crítica
+if (z > regiao_critica[1]){
+  print("Fora da região crítica. Nao rejeita H0.")
+} else
+  print("Na região crítica. Rejeita H0.")
+
+```
+
+  Como está fora da região crítica, não rejeitamos H0. Ou seja, há evidências de que a compinhia está certa na afirmação: "o índice médio de nicotina dos cigarros que fabrica apresenta-se abaixo de 25,5 mg por cigarro".
+
+### 3. Em indivíduos sadios, o consumo renal de oxigênio distribui-se normalmente em torno de 13,3 cm3 /min. Deseja-se investigar, com base em nove indivíduos portadores de certa moléstia, se esta tem influência no consumo renal médio de oxigênio. Os consumo medidos para os pacientes foram:
+```{r}
+consumo.pacientes = c(13.1, 14.9, 13.6, 14.4, 12.9, 15.0, 13.7, 13.5, 14.1); consumo.pacientes
+```
+
+### Qual a conclusão, ao nível de 10% de significância?
+
+  *Hipotese nula:* O consumo renal de oxigênio é, em média, 13.3. Ou seja, individuos saudáveis possuem média de 13.3 no consumo renal de oxigênio.
+  *Hipotese alternativa:* O consumo renal de oxigênio, em média, é diferente de 13.3. Ou seja, indivíduos não saudáveis não tem média de 13.3 no consumo renal de oxigênio.
+  
+```{r}
+n = 9
+alfa = 0.1
+media.pop = 13.3
+dados = as.data.frame(consumo.pacientes)
+media.amostral = apply(dados, MARGIN = 2, FUN = mean); media.amostral
+
+est.var = (1/(n-1))*sum((dados-media.amostral)^2); est.var
+
+# Normalizando a variavel
+t = (media.amostral - media.pop)/sqrt(est.var/n); t
+
+# Encontrando a região crítica
+z.half.alfa = qnorm(1.0-alfa/2.0) # pois é bilateral
+regiao_critica = c(-z.half.alfa, z.half.alfa); regiao_critica
+
+
+
+```
+
+Plotando as regioes criticas:
+
+```{r}
+# -----------------------------------------------------------------
+# Plotando a distribuicao normal com seus pontos da regiao critica
+# -----------------------------------------------------------------
+x = rnorm(1000)
+y = dnorm(x, mean = 0, sd = 1)
+
+# Encontrando os pontos da distribuicao normal que esta na regiao critica
+dentro_regiao_critica = ifelse(x < regiao_critica[1], x,
+                                ifelse(x > regiao_critica[2], x, 6))
+
+# Plotando o grafico com sua regiao critica
+plot(x, y, # plota o grafico de uma distribuicao normal
+     type = "p", # grafico de pontos
+     pch=19, # tipo do ponto preenchido
+     col = "black")
+points(dentro_regiao_critica, y, # pontos da regiao critica
+       col="red")
+abline(v=regiao_critica, col="red") # valores criticos da regiao critica
+points(x = t, y = 0, # normalizada
+       col="green",
+       pch=19 # tipo do ponto preenchido
+       )
+
+# z está fora da região crítica
+if (t < regiao_critica[1] & t > regiao_critica[2]){
+  print("Fora da região crítica. Nao rejeita H0.")
+} else
+  print("Na região crítica. Rejeita H0.")
+
+```
+
+  Como está na região crítica, rejeitamos H0. Ou seja, há evidências de que o consumo renal de oxigênio, em média, é diferente de 13.3. Ou seja, indivíduos não saudáveis não tem média de 13.3 no consumo renal de oxigênio.
+
+### 4. Um valor médio aceitável para nível de vitamina A sérica é de 29mg/100ml de sangue. Uma investigadora estudou se a taxa média de vitamina A sérica entre imigrantes em trânsito pela CETREN de São Paulo, era menor que a aceitável, em mulheres de 18 a 25 anos. Na amostra de 50 pessoas encontrou-se x= 25,3 mg/100ml e s = 7,9 mg/100ml.
+### Ao nível de significância de 0,05, você acha que o nível sérico de vitamina A em imigrantes que passam pela CETREN é abaixo do nível aceitável?
+```{r}
+
+```
+
+
+# ASSUNTO: Teste de hipóteses da diferença de médias de duas populações correlacionadas.
+### 1. Suponhamos que um experimento tenha sido executado a fim de verificar a influência do ambiente sobre o desenvolvimento da inteligência. Foram considerados 11 pares de gêmeos idênticos separados em tenra idade, sendo que, para cada par, um elemento foi criado em lar classificado como socialmente superior (S), enquanto que o outro foi criado em ambiente pobre (P). Os resultados em QI, da aplicação de um teste de inteligência foram:
+```{r}
+pessoa = c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11)
+superior =  c(100, 112, 120, 98, 105, 100, 97, 115, 104, 99, 101)
+pobre = c(94, 100, 112, 95, 96, 92, 90, 102, 106, 97, 104)
+dados_ex1 = data.frame(pessoa, superior, pobre); dados_ex1
+```
+
+
+### Fixando-se o nível de significância do teste em 0,05, qual a conclusão sobre a influência do ambiente no desenvolvimento da inteligência?
+
+  *H0:* diferença entre superior e pobre é igual a 0. Ou seja, o ambiente não interfere no desenvolvimento.
+  *Ha:* diferença entre superior e pobre é diferente de 0. Ou seja, o ambiente interfere no desenvolvimento.
+
+```{r}
+alfa = 0.05
+n = 11
+df = n-1
+dif = dados_ex1$superior - dados_ex1$pobre; mean(dif)
+soma.dif.quad = sum(dif^2); soma.dif.quad
+
+d = sum(dif)/n   
+s = sqrt((soma.dif.quad - ((sum(dif)^2)/n))/(n-1)) 
+t = d/(s/sqrt(n)); t
+
+# Obtem os valores criticos
+vc.n = qt(alfa/2, df); vc.n
+vc.p = qt(1-alfa/2, df); vc.p
+
+# Executando o teste para verificar os valores calculados
+t.test(dados_ex1$superior, 
+       dados_ex1$pobre,
+       paired = T, # Os grupos sao correlacionados
+       alternative = "two.sided",
+       var.equal = T,
+       mu = 0) # H0 igual a zero (dif igual zero)
+
+```
+
+  Como o valor de t calculado é 3,64, e t é maior que 2,22, então rejeitamos H0. Ou seja, concluimos que o ambiente interfere sim no desenvolvimento da inteligência.
+
+### 2. Com a finalidade de se comparar a fração de albumina no soro (g%) uma experiência foi feita utilizando-se os métodos do sulfato de sódio e do metanol aquoso, com os soros de 10 indivíduos. Os resultados foram os seguintes:
+```{r}
+paciente = c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+sulfato = c(4.9, 5.1, 5.2, 4.6, 3.4, 3.5, 3.9, 3.8, 2.9, 2.6)
+metanol = c(4.2, 4.4, 4.7, 3.8, 2.4, 2.4, 2.8, 2.8, 3.1, 1.6)
+dados_ex2 = data.frame(paciente, sulfato, metanol); dados_ex2
+
+```
+
+### Considerando-se que a probabilidade de rejeitarmos a hipótese Ho quando Ho fôr verdadeira é igual a 0,02, podemos afirmar que os dois métodos levam a resultados distintos?
+  *H0:*  média entre as duas populações são iguais. Ou seja, os dois métodos levam a resultados iguais.
+  *Ha:*  média entre as duas populações são diferentes. Ou seja, os dois métodos podem levar a resultados distintos.
+
+```{r}
+alfa = 0.02
+half.alfa = alfa/2 # Pois é um teste bilateral
+n = 10
+dif = as.numeric(dados_ex2$sulfato - dados_ex2$metanol); dif
+
+zcritico <- c(qt(half.alfa,n-1),qt(1-half.alfa,n-1)); zcritico
+
+# Media amostral
+D = (mean(dados_ex2$sulfato) - mean(dados_ex2$metanol)); D
+
+# Estimador da variancia
+S2 = (1/n)*sum(((dif) - D)^2); S2
+
+# por Ho, a média populacional é 0. Portanto:
+T.valor = (D - 0)/sqrt(S2/n); T.valor
+
+
+```
+
+  Como o valor de t calculado é  6.505365, e t pertence a regiao crítica, então rejeitamos H0. Ou seja, há evidências de que os dois métodos podem levar a resultados distintos.
+
+
+# ASSUNTO: Teste de hipóteses da diferença de médias de duas populações não correlacionadas.
+### 1. Setenta crianças receberam uma dieta especial e tiveram seus ganhos de peso anotados por um período de seis meses. O ganho médio de peso foi de 3,1 quilogramas.
+### Um grupo controle de cem crianças de condições físicas e econômicas semelhantes tiveram uma dieta comum e seu ganho médio de peso foi de 2,7 quilogramas. Suponha que o desvio padrão populacional para ganho de peso seja 0,94 quilogramas. Fixando-se o nível de significância em 1%., os resultados desta experiência são suficientes para afirmar que a dieta especial realmente provoca um aumento de peso?
+
+  *Hipóteses:* A diferença da média das duas populações deve ser diferente se a dieta fizer efeito.
+  *H0:* A dieta não tem efeito. (D = 0)
+  *HA:* A dieta tem efeito. (D != 0)
+
+
+```{r}
+n1 = 70
+pm1 = 3.1 # ganho médio de peso g1
+n2 = 100
+pm2 = 2.7 # ganho médio de peso g2
+dpp = 0.94 # desvio padrão populacional
+alfa = 0.01 # nivel de significancia
+half.alfa = alfa/2 # pois é bilateral
+  
+D = pm1 - pm2
+zcritico = c(qt(half.alfa, n1),qt(1-half.alfa,n2)); zcritico
+
+Z = D/sqrt((0.94/n1)+(0.94/n2)); Z
+
+```
+
+  Como o valor de Z calculado é 2.647406, e Z pertence a regiao crítica, então rejeitamos H0. Ou seja, há evidências de que a dieta tem efeito.
+
+
+### 2. Os dados seguintes são aumentos de peso de 26 ratos ( em gramas) dos quais a metade recebeu proteína de amendoim cru e a outra metade proteina de amendoim torrado. O fato de se torrar o amendoim tem efeito sobre o seu valor protéico? Considere a probabilidade de rejeitar Ho quando Ho for verdadeira igual a 0,05.
+
+```{r}
+cru = c(61, 60, 56, 63, 62, 63, 59, 55, 44, 61, 53, 62, 63)
+torrado = c(55, 54, 47, 59, 64, 61, 57, 58, 62, 58, 61, 62, 59) 
+dados = data.frame(cru, torrado); dados
+```
+
+  *Ho:* média torrado = média cru
+  *Ha:* média torrado != média cru
+
+```{r}
+n1 = 13 # populacao com amendoim cru
+n2 = 13 # populacao com amendoim torrado
+alfa = 0.05
+half.alfa = alfa/2
+dpc = sd(dados$cru) # desvio padrao cru
+dpt = sd(dados$torrado) # desvio padrao torrado
+ 
+# graus de liberdade
+gl = (((dpc^2/n1)+(dpt^2/n2))^2)/((((dpc^2/n1)^2)/(n1-1)) + (((dpt^2/n2)^2)/(n2-1))); gl
+
+valores.critico = c(qt(half.alfa, gl), qt(1-half.alfa, gl)); valores.critico
+
+T.valor = (mean(dados$cru) - mean(dados$torrado))/sqrt((dpc^2/n1)+(dpt^2/n2)); T.valor
+
+```
+
+  Como o valor de T calculado é 0.1972063, e Z não pertence a regiao crítica, então não rejeitamos H0. Ou seja, há evidências de que o amendoim não tem efeito no valor proteico.
