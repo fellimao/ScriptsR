@@ -1,4 +1,4 @@
-		#---Funções básicas para utilizar em cálculos estatísticos---#
+﻿		#---Funções básicas para utilizar em cálculos estatísticos---#
 
 	#--SELECT--#
 #A função select tem objetivo de selecionar colunas de uma tabela
@@ -49,3 +49,7 @@ voos
 #Função que retorna dados unicos de uma determinada coluna ou mais
 #distinct(base,coluna1,coluna2,...,colunaN)
 distinct(voos,ano,day)
+
+		#--ESCALONAR--#
+#escalar os dados, parametrizar
+y = scale(x)
